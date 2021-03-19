@@ -22,74 +22,80 @@ import io.opentelemetry.exporters.logging.LoggingSpanExporter;
 import io.opentelemetry.opentracingshim.TraceShim;
 import io.opentelemetry.sdk.correlationcontext.CorrelationContextManagerSdk;
 import io.opentelemetry.sdk.trace.TracerSdkProvider;
-import io.opentelemetry.sdk.trace.export.SimpleSpansProcessor;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentracing.Tracer;
 import io.opentracing.contrib.tracerresolver.TracerFactory;
 
 public class OpenTelemetryBridgeTracer implements TracerFactory {
-  private static final String EXPORTER_PROP = "ot.otel.exporter";
-  private static final String JAEGER_PROP = EXPORTER_PROP + ".jaeger";
+	private static final String EXPORTER_PROP = "ot.otel.exporter";
+	private static final String JAEGER_PROP = EXPORTER_PROP + ".jaeger";
 
-  private static Long parseLong(final String str) {
-    if (str == null)
-      return null;
+	private static Long parseLong(final String str) {
+		if (str == null)
+			return null;
 
-    try {
-      return Long.parseLong(str);
-    }
-    catch (final NumberFormatException e) {
-      return null;
-    }
-  }
+		try {
+			return Long.parseLong(str);
+		} catch (final NumberFormatException e) {
+			return null;
+		}
+	}
 
-  @Override
-  public Tracer getTracer() {
-    final String exporterProperty = System.getProperty(EXPORTER_PROP);
-    final SpanExporter exporter;
-    if ("jaeger".equals(exporterProperty)) {
-      final String serviceName = System.getProperty(JAEGER_PROP + ".serviceName");
-      if (serviceName == null)
-        throw new IllegalArgumentException(JAEGER_PROP + ".serviceName=<SERVICE_NAME> is invalid: " + serviceName);
+	@Override
+	public Tracer getTracer() {
+		final String exporterProperty = System.getProperty(EXPORTER_PROP);
+		final SpanExporter exporter;
+		if ("jaeger".equals(exporterProperty)) {
+			final String serviceName = System.getProperty(JAEGER_PROP + ".serviceName");
+			if (serviceName == null)
+				throw new IllegalArgumentException(JAEGER_PROP + ".serviceName=<SERVICE_NAME> is invalid: " + serviceName);
 
-      final String address = System.getProperty(JAEGER_PROP + ".address");
-      final int colon;
-      final String host;
-      final Long port;
-      if (address == null || (colon = address.indexOf(':')) == -1 || (host = address.substring(0, colon)).length() == 0 || (port = parseLong(address.substring(colon + 1))) == null || 1 > port || port > 65535)
-        throw new IllegalArgumentException(JAEGER_PROP + ".address=<HOST:PORT> is invalid: " + address);
+			final String address = System.getProperty(JAEGER_PROP + ".address");
+			final int colon;
+			final String host;
+			final Long port;
+			if (address == null || (colon = address.indexOf(':')) == -1 || (host = address.substring(0, colon)).length() == 0 || (port = parseLong(address.substring(colon + 1))) == null || 1 > port || port > 65535)
+				throw new IllegalArgumentException(JAEGER_PROP + ".address=<HOST:PORT> is invalid: " + address);
 
-      final JaegerGrpcSpanExporter.Builder builder = JaegerGrpcSpanExporter.newBuilder().setServiceName(serviceName);
-      builder.setChannel(ManagedChannelBuilder.forAddress(host, port.intValue()).usePlaintext().build());
+			final JaegerGrpcSpanExporter.Builder builder = JaegerGrpcSpanExporter.newBuilder().setServiceName(serviceName);
+			builder.setChannel(ManagedChannelBuilder.forAddress(host, port.intValue()).usePlaintext().build());
 
-      final Long deadline = parseLong(System.getProperty(JAEGER_PROP + ".deadline"));
-      if (deadline != null)
-        builder.setDeadlineMs(deadline);
+			final Long deadline = parseLong(System.getProperty(JAEGER_PROP + ".deadline"));
+			if (deadline != null)
+				builder.setDeadlineMs(deadline);
 
-      exporter = builder.build();
-    }
-    else if ("inmemory".equals(exporterProperty)) {
-      exporter = InMemorySpanExporter.create();
-    }
-    else if ("logging".equals(exporterProperty)) {
-      exporter = new LoggingSpanExporter();
-    }
-    else if (exporterProperty != null) {
-      throw new UnsupportedOperationException("Unsupported " + EXPORTER_PROP + "=" + exporterProperty);
-    }
-    else {
-      return TraceShim.createTracerShim();
-    }
+			exporter = builder.build();
+		} else if ("inmemory".equals(exporterProperty)) {
+			exporter = InMemorySpanExporter.create();
+		} else if ("logging".equals(exporterProperty)) {
+			exporter = new LoggingSpanExporter();
+		} else if (exporterProperty != null) {
+			throw new UnsupportedOperationException("Unsupported " + EXPORTER_PROP + "=" + exporterProperty);
+		} else {
+			// For GA
+			// return OpenTracingShim.createTracerShim();
+			return TraceShim.createTracerShim();
+		}
 
-    final String reportOnlySampled = System.getProperty(EXPORTER_PROP + ".reportOnlySampled");
-    if (reportOnlySampled != null)
-      System.setProperty("otel.ssp.export.sampled", reportOnlySampled);
+		final String reportOnlySampled = System.getProperty(EXPORTER_PROP + ".reportOnlySampled");
+		if (reportOnlySampled != null)
+			System.setProperty("otel.ssp.export.sampled", reportOnlySampled);
 
-    final SimpleSpansProcessor.Config config = SimpleSpansProcessor.Config.loadFromDefaultSources();
+		// For GA
+		// final SdkTracerProvider provider = SdkTracerProvider.builder()
+		// 		.addSpanProcessor(SimpleSpanProcessor.create(exporter))
+		// 		.build();
 
-    final TracerSdkProvider provider = TracerSdkProvider.builder().build();
-    provider.addSpanProcessor(SimpleSpansProcessor.create(exporter, config));
+		// final OpenTelemetrySdk otel = OpenTelemetrySdk.builder()
+		// 		.setTracerProvider(provider)
+		// 		.build();
 
-    return TraceShim.createTracerShim(provider, new CorrelationContextManagerSdk());
-  }
+		// return OpenTracingShim.createTracerShim(otel);
+
+		final TracerSdkProvider provider = TracerSdkProvider.builder().build();
+		provider.addSpanProcessor(SimpleSpanProcessor.newBuilder(exporter).build());
+
+		return TraceShim.createTracerShim(provider, new CorrelationContextManagerSdk());
+	}
 }

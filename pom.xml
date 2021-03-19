@@ -20,7 +20,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.opentracing.contrib</groupId>
   <artifactId>opentelemetry-bridge</artifactId>
-  <version>0.4.1-SNAPSHOT</version>
+  <version>0.4.1</version>
   <name>Java OpenTelemetry Bridge</name>
   <description>OpenTracing Bridge for OpenTelemetry Tracers</description>
   <url>https://github.com/opentracing-contrib/java-opentelemetry-bridge</url>
@@ -48,9 +48,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
-    <version.opentracing>0.33.0</version.opentracing>
-    <version.opentelemetry>0.4.0</version.opentelemetry>
-    <version.opentelemetry.grpc>1.29.0</version.opentelemetry.grpc>
+    <version.grpc>1.36.0</version.grpc>
   </properties>
   <profiles>
     <profile>
@@ -318,6 +316,9 @@
               <goal>single</goal>
             </goals>
             <configuration>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
               <descriptors>
                 <descriptor>assembly.xml</descriptor>
               </descriptors>
@@ -388,38 +389,73 @@
     <dependency>
       <groupId>io.opentracing</groupId>
       <artifactId>opentracing-api</artifactId>
-      <version>${version.opentracing}</version>
+      <version>0.33.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-sdk</artifactId>
-      <version>${version.opentelemetry}</version>
+      <version>0.8.0</version>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-opentracing-shim</artifactId>
-      <version>${version.opentelemetry}</version>
+      <version>0.8.0</version>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-exporters-jaeger</artifactId>
-      <version>${version.opentelemetry}</version>
+      <version>0.8.0</version>
     </dependency>
+    <!-- Imported as workaround for -->
+    <!-- https://github.com/open-telemetry/opentelemetry-java/issues/1279 -->
+<!--    <dependency>-->
+<!--      <groupId>io.opentelemetry</groupId>-->
+<!--      <artifactId>opentelemetry-sdk-extension-otproto</artifactId>-->
+<!--      <version>0.8.0</version>-->
+<!--    </dependency>-->
+    <!-- https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java-util -->
+<!--    <dependency>-->
+<!--      <groupId>com.google.protobuf</groupId>-->
+<!--      <artifactId>protobuf-java-util</artifactId>-->
+<!--      <version>3.12.4</version>-->
+<!--    </dependency>-->
+    <!-- https://mvnrepository.com/artifact/io.opentelemetry/opentelemetry-sdk-contrib-otproto -->
+<!--    <dependency>-->
+<!--      <groupId>io.opentelemetry</groupId>-->
+<!--      <artifactId>opentelemetry-sdk-contrib-otproto</artifactId>-->
+<!--      <version>0.5.0</version>-->
+<!--      <scope>runtime</scope>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-exporters-inmemory</artifactId>
-      <version>${version.opentelemetry}</version>
+      <version>0.4.0</version>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-exporters-logging</artifactId>
-      <version>${version.opentelemetry}</version>
+      <version>0.4.0</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-core</artifactId>
-      <version>${version.opentelemetry.grpc}</version>
+      <version>${version.grpc}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty-shaded</artifactId>
+      <version>${version.grpc}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+      <version>${version.grpc}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+      <version>${version.grpc}</version>
     </dependency>
 
     <dependency>
